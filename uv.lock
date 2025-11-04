@@ -52,6 +52,7 @@ name = "b25-tourism"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "numpy" },
     { name = "pandas" },
     { name = "ridgeplot" },
     { name = "shiny" },
@@ -60,6 +61,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "numpy", specifier = ">=2.3.4" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "ridgeplot", specifier = ">=0.5.0" },
     { name = "shiny", specifier = ">=1.5.0" },
