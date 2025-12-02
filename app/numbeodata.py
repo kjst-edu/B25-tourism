@@ -42,6 +42,7 @@ def scrape_city(city_name):
                     price = float(price_match.group().replace(',', ''))
                     items[item_name] = price
     
+    
     return items
 
 def main():

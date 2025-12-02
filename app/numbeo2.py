@@ -19,6 +19,7 @@ CITIES = {
     "日本": ["Osaka"]
 }
 
+
 # カテゴリーマッピング（キーワードで分類）
 CATEGORY_KEYWORDS = {
     "食費": [
