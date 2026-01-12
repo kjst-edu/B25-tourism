@@ -10,6 +10,9 @@ import requests
 import pandas as pd
 from datetime import datetime
 
+import os
+csv_path = "numbeo_category_data.csv"
+
 # 国と通貨コードのマッピング
 COUNTRY_CURRENCY_MAP = {
     '台湾': 'TWD',
@@ -86,10 +89,10 @@ def convert_to_jpy(csv_path):
     
     return df
 
-import os
+#import os
 # スクリプトの場所を基準にする（移植可能）
 #csv_path = os.path.join(os.path.dirname(__file__), "numbeo_category_data.csv")
-csv_path = "numbeo_category_data.csv"
+#csv_path = "numbeo_category_data.csv"
 
 # __file__ = スクリプト自身のパス（自動取得）
 # これなら誰でもどこでも動く
