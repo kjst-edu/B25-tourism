@@ -2,49 +2,56 @@ import pandas as pd
 from shiny import App, render, ui, reactive
 import os
 
-# --- データの読み込み ---
+# --- ファイルパスの設定 ---
+# あなたの環境に合わせて絶対パスで指定します
+FLIGHT_PATH = "/Users/yuusuke/Documents/GitHub/B25-tourism/app/amadeus_flights.csv"
+COST_PATH = "/Users/yuusuke/Documents/GitHub/B25-tourism/numbeo_category_data_jpy.csv"
+
 def load_data():
-    flight_file = "amadeus_flights.csv"
-    cost_file = "numbeo_category_data_jpy.csv"
-    
-    if not os.path.exists(flight_file) or not os.path.exists(cost_file):
+    if not os.path.exists(FLIGHT_PATH) or not os.path.exists(COST_PATH):
+        print(f"⚠️ ファイルが見つかりません:\n航空券: {os.path.exists(FLIGHT_PATH)}\n物価: {os.path.exists(COST_PATH)}")
         return None
 
-    # Amadeus APIから取得した航空券データ
-    df_f = pd.read_csv(flight_file)
-    # Numbeoから取得し円換算した物価データ
-    df_c = pd.read_csv(cost_file)
+    # CSVの読み込み
+    df_f = pd.read_csv(FLIGHT_PATH)
+    df_c = pd.read_csv(COST_PATH)
     
-    # 結合して一つのデータフレームにする
-    return pd.merge(df_f, df_c, left_on="国", right_on="country", how="inner")
+    # マージ（amadeus_flights.csvの「国」とnumbeo_category_data_jpy.csvの「country」を結合）
+    merged = pd.merge(df_f, df_c, left_on="国", right_on="country", how="inner")
+    
+    # 重複する国名を整理し、価格を数値型に変換
+    merged['価格'] = pd.to_numeric(merged['価格'], errors='coerce')
+    
+    print(f"✅ データを統合しました: {len(merged)}件ヒット")
+    return merged
 
 df_master = load_data()
 
 # --- UIデザイン ---
 app_ui = ui.page_fluid(
-    ui.panel_title("📊 アジア旅行・動的予算シミュレーター"),
+    ui.panel_title("✈️ アジア旅行 予算シミュレーター (KIX発)"),
+    ui.markdown("---"),
     
     ui.layout_sidebar(
         ui.sidebar(
-            ui.h4("旅行プラン設定"),
-            ui.input_slider("days", "滞在日数", 1, 14, 3),
-            ui.input_numeric("budget", "予算上限 (円)", 120000, step=5000),
+            ui.h4("プラン設定"),
+            ui.input_slider("days", "滞在日数", 1, 10, 3),
+            ui.input_numeric("budget", "総予算の上限 (円)", 150000, step=5000),
             
             ui.hr(),
             ui.h5("スタイル調整"),
-            # 係数をかけて動的に物価を変動させる
-            ui.input_slider("food_style", "食費レベル (0.5=節約, 2.0=贅沢)", 0.5, 2.0, 1.0, step=0.1),
-            ui.input_slider("trans_style", "移動レベル (タクシー多めなど)", 0.5, 2.0, 1.0, step=0.1),
+            ui.input_slider("food_style", "食費（1.0=標準, 2.0=贅沢）", 0.5, 3.0, 1.0, step=0.1),
+            ui.input_slider("trans_style", "移動（1.0=標準, 2.0=タクシー多）", 0.5, 3.0, 1.0, step=0.1),
             
             ui.hr(),
-            ui.markdown("※航空券はAmadeus APIの最新値")
+            ui.markdown("航空券データ: Amadeus API\n物価データ: Numbeo")
         ),
         
-        ui.navset_tab(
-            ui.nav_panel("予算内ランキング", 
+        ui.navset_card_pill(
+            ui.nav_panel("おすすめの旅行先", 
                 ui.output_ui("result_list")
             ),
-            ui.nav_panel("費用内訳データ", 
+            ui.nav_panel("詳細データ一覧", 
                 ui.output_table("summary_table")
             )
         )
@@ -54,57 +61,58 @@ app_ui = ui.page_fluid(
 # --- サーバーロジック ---
 def server(input, output, session):
     
-    # --- リアクティブ計算: 入力が変わるたびに自動計算される ---
     @reactive.calc
-    def calc_total_costs():
-        if df_master is None:
+    def filtered_df():
+        if df_master is None or df_master.empty:
             return None
         
         df = df_master.copy()
         
-        # 動的な計算ロジック
-        # 合計 = 航空券代 + (食費 * スタイル * 日数) + (交通費 * スタイル * 日数)
+        # 動的な計算
         df['calc_food'] = df['食費_円'] * input.food_style() * input.days()
         df['calc_trans'] = df['交通費_円'] * input.trans_style() * input.days()
         df['total_cost'] = df['価格'] + df['calc_food'] + df['calc_trans']
         
-        # 予算内でフィルタリング
-        return df[df['total_cost'] <= input.budget()].sort_values('total_cost')
+        # 予算フィルターと安い順ソート
+        res = df[df['total_cost'] <= input.budget()].sort_values('total_cost')
+        return res
 
-    # --- 結果の表示 (カード形式) ---
     @render.ui
     def result_list():
-        data = calc_total_costs()
-        if data is None or data.empty:
-            return ui.div(ui.h3("該当なし"), ui.p("予算を増やすか、スタイルを『節約』にしてみてください。"))
+        data = filtered_df()
+        if data is None:
+            return ui.markdown("### ⚠️ データファイルが読み込めませんでした。パスを確認してください。")
+        if data.empty:
+            return ui.markdown("### 該当なし\n予算を増やすか、日数を減らしてみてください。")
 
         cards = []
         for _, row in data.iterrows():
             cards.append(
                 ui.card(
-                    ui.card_header(f"{row['国']} ({row['city']})"),
+                    ui.card_header(ui.h4(f"{row['国']} ({row['city']})")),
                     ui.layout_column_wrap(
                         ui.div(
-                            ui.h3(f"総額: ¥{int(row['total_cost']):,d}"),
-                            ui.p(f"✈️ 航空券: ¥{int(row['価格']):,d}", style="color: blue;"),
+                            ui.h2(f"¥{int(row['total_cost']):,d}", style="color: #2c3e50;"),
+                            ui.p(f"✈️ 航空券: ¥{int(row['価格']):,d}"),
                         ),
                         ui.div(
+                            ui.p(f"📅 出発: {row['出発時刻']}"),
                             ui.p(f"🍴 食費計: ¥{int(row['calc_food']):,d}"),
                             ui.p(f"🚗 交通費計: ¥{int(row['calc_trans']):,d}"),
-                            ui.p(f"1日あたりの現地費: ¥{int((row['calc_food']+row['calc_trans'])/input.days()):,d}")
                         ),
                         width=1/2
                     ),
-                    style="margin-bottom: 15px; border-left: 8px solid #0d6efd;"
+                    style="margin-bottom: 15px; border-left: 10px solid #3498db;"
                 )
             )
         return ui.div(*cards)
 
-    # --- 数値一覧の表示 ---
     @render.table
     def summary_table():
-        data = calc_total_costs()
+        data = filtered_df()
         if data is None: return None
-        return data[['国', 'city', '価格', 'total_cost']].rename(columns={'価格': '航空券代', 'total_cost': '合計費用'})
+        return data[['国', 'city', '価格', 'total_cost']].rename(
+            columns={'価格': '航空券代', 'total_cost': '合計予算（円）'}
+        )
 
 app = App(app_ui, server)
