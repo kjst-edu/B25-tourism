@@ -34,5 +34,6 @@ def server(input, output, session):
         df = pd.read_csv("amadeus_search.csv")
         df_sorted = df.sort_values("価格", ascending=True)
         fig = px.bar(df_sorted, x="価格", y="国", orientation='h', text_auto=True)
+        return fig
 
 app = App(app_ui, server)

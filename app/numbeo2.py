@@ -10,10 +10,10 @@ CITIES = {
     "韓国": ["Seoul"],
     "マカオ": ["Macao"],
     "フィリピン": ["Manila"],
-    "中国": ["Beijing", "Shanghai"],
+    "中国": ["Beijing"],#北京のみ、"Shanghai"を削除
     "香港": ["Hong-Kong"],
     "タイ": ["Bangkok", "Chiang-Mai"],
-    "ベトナム": ["Ho-Chi-Minh-City", "Hanoi"],
+    "ベトナム": ["Ho-Chi-Minh-City"],#Hanoi削除、ホーチミンのみ
     "マレーシア": ["Kuala-Lumpur"],
     "シンガポール": ["Singapore"],
     "日本": ["Osaka"]
