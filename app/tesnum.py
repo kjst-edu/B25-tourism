@@ -1,15 +1,14 @@
 
+"""
+Numbeoデータを日本円に換算するプログラム
 
-#Numbeoデータを日本円に換算するプログラム
-
-
+必要なパッケージ:
+pip install requests pandas
+"""
 
 import requests
 import pandas as pd
 from datetime import datetime
-
-import os
-#csv_path = "numbeo_category_data.csv"
 
 # 国と通貨コードのマッピング
 COUNTRY_CURRENCY_MAP = {
@@ -45,10 +44,28 @@ def convert_to_jpy(csv_path):
     print(f"取得日時: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 70)
     
+    # ファイル情報を表示（デバッグ用）
+    abs_path = os.path.abspath(csv_path)
+    print(f"📂 読み込むファイル: {abs_path}")
+    
+    if os.path.exists(csv_path):
+        mtime = datetime.fromtimestamp(os.path.getmtime(csv_path))
+        print(f"📅 ファイル最終更新: {mtime.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"📊 ファイルサイズ: {os.path.getsize(csv_path)} bytes")
+    else:
+        print(f"❌ ファイルが見つかりません: {csv_path}")
+        return None
+    
+    print()
+    
     # CSVを読み込み
     df = pd.read_csv(csv_path, encoding='utf-8-sig')
     print(f"CSVファイル読み込み: {len(df)}行")
     print(f"列: {list(df.columns)}")
+    
+    # 最初の3行を表示（データ確認）
+    print("\n📋 読み込んだデータ（最初の3行）:")
+    print(df.head(3))
     print()
     
     # 為替レート取得
@@ -60,13 +77,16 @@ def convert_to_jpy(csv_path):
     # 国ごとに為替レートを追加
     df['為替レート'] = df['country'].map(rates)
     
-    # 各カテゴリーを円換算
+    # 各カテゴリーを円換算（食費と交通費のみ）
     for column in ['食費', '交通費']:
         if column in df.columns:
             df[f'{column}_円'] = df[column] * df['為替レート']
+            print(f"✅ {column}_円 を計算しました")
         else:
             print(f"⚠️ 警告: '{column}' 列が見つかりません")
             print(f"   利用可能な列: {list(df.columns)}")
+    
+    print()
     
     # 結果を表示
     print("=" * 70)
@@ -75,7 +95,7 @@ def convert_to_jpy(csv_path):
     
     # 表示用に列を選択
     display_columns = ['country', 'city', '為替レート']
-    for col in [ '食費_円', '交通費_円']:
+    for col in ['食費', '食費_円', '宿泊費', '宿泊費_円', '交通費', '交通費_円']:
         if col in df.columns:
             display_columns.append(col)
     
@@ -103,13 +123,19 @@ if __name__ == "__main__":
         print(f"  - {file}")
     print()
     
-    
+    # 同じフォルダ内のCSVファイルを読み込み
     csv_path = "numbeo_category_data.csv"
-#import os
-# スクリプトの場所を基準にする（移植可能）
-#csv_path = os.path.join(os.path.dirname(__file__), "numbeo_category_data.csv")
-#csv_path = "numbeo_category_data.csv"
-
-# __file__ = スクリプト自身のパス（自動取得）
-# これなら誰でもどこでも動く
-
+    
+    # ファイルの存在確認
+    if os.path.exists(csv_path):
+        print(f"✅ ファイル発見: {csv_path}")
+        print(f"   絶対パス: {os.path.abspath(csv_path)}")
+        print()
+        df = convert_to_jpy(csv_path)
+    else:
+        print(f"❌ エラー: '{csv_path}' が見つかりません")
+        print(f"   探している場所: {os.path.abspath(csv_path)}")
+        print()
+        print("対処方法:")
+        print("1. 'numbeo_category_data.csv' をこのプログラムと同じフォルダに配置")
+        print("2. またはターミナルでCSVファイルがあるフォルダに移動してから実行")
