@@ -4,8 +4,8 @@ import os
 
 # --- ファイルパスの設定 ---
 # あなたの環境に合わせて絶対パスで指定します
-FLIGHT_PATH = "/Users/yuusuke/Documents/GitHub/B25-tourism/app/amadeus_flights.csv"
-COST_PATH = "/Users/yuusuke/Documents/GitHub/B25-tourism/numbeo_category_data_jpy.csv"
+FLIGHT_PATH = "app/amadeus_flights.csv"
+COST_PATH = "numbeo_category_data_jpy.csv"
 
 def load_data():
     if not os.path.exists(FLIGHT_PATH) or not os.path.exists(COST_PATH):
