@@ -1,7 +1,4 @@
-
-
 #Numbeoデータを日本円に換算するプログラム
-
 
 
 import requests
@@ -90,24 +87,11 @@ def convert_to_jpy(csv_path):
     
     return df
 
-if __name__ == "__main__":
-    import os
-    
-    # 現在の作業ディレクトリを表示
-    print(f"現在の作業ディレクトリ: {os.getcwd()}")
-    print()
-    
-    # 同じフォルダ内のファイル一覧を表示
-    print("このフォルダ内のファイル:")
-    for file in os.listdir('.'):
-        print(f"  - {file}")
-    print()
-    
-    
-    csv_path = "numbeo_category_data.csv"
-#import os
+
+convert_to_jpy("numbeo_category_data.csv")
+
 # スクリプトの場所を基準にする（移植可能）
-#csv_path = os.path.join(os.path.dirname(__file__), "numbeo_category_data.csv")
+csv_path = os.path.join(os.path.dirname(__file__), "numbeo_category_data.csv")
 #csv_path = "numbeo_category_data.csv"
 
 # __file__ = スクリプト自身のパス（自動取得）
